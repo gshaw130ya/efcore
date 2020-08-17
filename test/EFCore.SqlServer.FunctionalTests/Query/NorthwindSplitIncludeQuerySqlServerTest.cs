@@ -180,6 +180,19 @@ FROM [Orders] AS [o]
 LEFT JOIN [Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
 INNER JOIN [Order Details] AS [o0] ON [o].[OrderID] = [o0].[OrderID]
 ORDER BY [o].[OrderID], [c].[CustomerID]");
+
+            using var context = CreateContext();
+
+            Assert.Equal(
+                @"SELECT [o].[OrderID], [o].[CustomerID], [o].[EmployeeID], [o].[OrderDate], [c].[CustomerID], [c].[Address], [c].[City], [c].[CompanyName], [c].[ContactName], [c].[ContactTitle], [c].[Country], [c].[Fax], [c].[Phone], [c].[PostalCode], [c].[Region]
+FROM [Orders] AS [o]
+LEFT JOIN [Customers] AS [c] ON [o].[CustomerID] = [c].[CustomerID]
+ORDER BY [o].[OrderID], [c].[CustomerID]
+
+This LINQ query is being executed in split-query mode. The SQL shown is for the first query to be executed. Additional queries may also be executed depending on the results of the first query.",
+                context.Set<Order>().Include(o => o.Customer).Include(o => o.OrderDetails).AsSplitQuery().ToQueryString(),
+                ignoreLineEndingDifferences: true,
+                ignoreWhiteSpaceDifferences: true);
         }
 
         public override async Task Include_references_multi_level(bool async)
@@ -1768,7 +1781,7 @@ ORDER BY [c].[CustomerID], [o].[OrderID]");
                         async,
                         ss => ss.Set<Customer>().Include(c => c.Orders),
                         entryCount: 8
-                 ), RelationalStrings.MissingOrderingInSqlExpression);      
+                 ), RelationalStrings.MissingOrderingInSqlExpression);
         }
 
         private void AssertSql(params string[] expected)
